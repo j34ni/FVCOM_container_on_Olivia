@@ -78,11 +78,9 @@ FavneChild1 hot start (restart IINT 4838435 -> 2025-07-23 02:00, 128 ranks total
 
 Measured on the current image (`:mpich5.1`: MPICH 5.1, parallel
 NetCDF/PnetCDF, PETSc + hypre BoomerAMG, the whole package stack at -O2),
-jobs 3008193 / 3008192, 28800 steps. Against the previous image (MPICH
-5.0.2, serial NetCDF; jobs 2681304 / 2681487: 0.1452 / 1:09:14 and
-0.1012 / 0:48:49) the 2-node run is 2.3% faster, the 1-node run 7.8%
-slower. s/step = median over steps 21..N. `medians.sh` recomputes these
-medians from the two job outputs; `plots/` holds figures from these runs.
+jobs 3008193 / 3008192, 28800 steps. s/step = median over steps 21..N.
+`medians.sh` recomputes these medians from the two job outputs;
+`plots/` holds figures from these runs.
 
 ## Build
 

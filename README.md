@@ -1,5 +1,7 @@
 # FVCOM on Olivia
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24304444.svg)](https://doi.org/10.5281/zenodo.24304444)
+
 Containerized FVCOM (branch `v5.1.0_icecode`, spherical, PETSc semi-implicit) for the
 Olivia cluster (Sigma2/NRIS). Runs under Apptainer; 1-node and 2-node SLURM job
 scripts included.

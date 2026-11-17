@@ -9,4 +9,5 @@ authors:
     email: jeani@uio.no
     affiliation: University of Oslo
 repository-code: "https://github.com/j34ni/FVCOM_container_on_Olivia"
+doi: 10.5281/zenodo.24304444
 license: MIT

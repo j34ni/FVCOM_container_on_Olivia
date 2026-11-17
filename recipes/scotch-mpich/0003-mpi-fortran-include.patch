@@ -1,0 +1,71 @@
+--- a/src/libscotch/library_dgraph_f.c
++++ b/src/libscotch/library_dgraph_f.c
+@@ -59,6 +59,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ 
+ /**************************************/
+ /*                                    */
+
+--- a/src/libscotch/library_dgraph_halo_f.c
++++ b/src/libscotch/library_dgraph_halo_f.c
+@@ -57,6 +57,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ 
+ /**************************************/
+ /*                                    */
+
+--- a/src/libscotch/library_dmesh_f.c
++++ b/src/libscotch/library_dmesh_f.c
+@@ -51,6 +51,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ 
+ /**************************************/
+ /*                                    */
+
+--- a/src/libscotchmetis/parmetis_dgraph_dual_f.c
++++ b/src/libscotchmetis/parmetis_dgraph_dual_f.c
+@@ -51,6 +51,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ #include "parmetis.h"                             /* Our "parmetis.h" file */
+ 
+ /**************************************/
+
+--- a/src/libscotchmetis/parmetis_dgraph_part_f.c
++++ b/src/libscotchmetis/parmetis_dgraph_part_f.c
+@@ -55,6 +55,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ #include "parmetis.h"                             /* Our "parmetis.h" file */
+ 
+ /**************************************/
+
+--- a/src/libscotchmetis/parmetis_dgraph_order_f.c
++++ b/src/libscotchmetis/parmetis_dgraph_order_f.c
+@@ -57,6 +57,8 @@
+ #include "module.h"
+ #include "common.h"
+ #include "ptscotch.h"
++#include <mpi.h>
++#include <mpi_fortran.h>
+ #include "parmetis.h"                             /* Our "parmetis.h" file */
+ 
+ /**************************************/

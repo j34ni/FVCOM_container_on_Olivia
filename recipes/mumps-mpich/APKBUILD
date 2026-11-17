@@ -1,0 +1,77 @@
+# Maintainer: Jean Iaquinta <jeani@uio.no>
+pkgname=mumps-mpich
+pkgver=5.7.3
+pkgrel=1
+pkgdesc="MUltifrontal Massively Parallel sparse direct Solver (MPICH, PT-Scotch+METIS ordering)"
+url="https://mumps-solver.org"
+license="CECILL-C"
+arch="x86_64 riscv64"
+makedepends="
+	gfortran
+	metis-dev
+	mpich-dev
+	openblas-dev
+	scalapack-mpich-dev
+	scotch-mpich-dev
+	"
+subpackages="$pkgname-dev"
+depends_dev="mumps-mpich=$pkgver-r$pkgrel"
+source="
+	MUMPS_$pkgver.tar.gz::https://mumps-solver.org/MUMPS_$pkgver.tar.gz
+	Makefile.inc
+	"
+builddir="$srcdir/MUMPS_$pkgver"
+
+prepare() {
+	cp "$srcdir"/Makefile.inc "$builddir"/Makefile.inc
+}
+
+build() {
+	local opt_extra="-fstack-clash-protection"
+	make -j"$(nproc)" allshared \
+		OPTC="-O2 -fPIC $opt_extra -DMPI_FORTRAN" \
+		OPTF="-O2 -fPIC -fopenmp -fallow-argument-mismatch $opt_extra" \
+		OPTL="-O2 -fPIC -fopenmp $opt_extra"
+}
+
+check() {
+	make -C examples all
+	export LD_LIBRARY_PATH="$builddir/lib:$builddir/PORD/lib"
+	cd examples
+	./dsimpletest < input_simpletest_real
+	mpiexec -n 4 ./dsimpletest < input_simpletest_real
+	mpiexec -n 2 ./zsimpletest < input_simpletest_cmplx
+}
+
+package() {
+	install -d "$pkgdir"/usr/lib "$pkgdir"/usr/include
+	install -Dm644 include/*.h -t "$pkgdir"/usr/include
+	install -Dm755 lib/*.so -t "$pkgdir"/usr/lib
+	install -Dm755 PORD/lib/libpord.so -t "$pkgdir"/usr/lib
+	install -Dm644 LICENSE \
+		"$pkgdir"/usr/share/licenses/$pkgname/CECILL-C
+}
+
+dev() {
+	default_dev
+	install -d "$subpkgdir"/usr/lib/pkgconfig
+	for prec in s d c z; do
+		cat > "$subpkgdir"/usr/lib/pkgconfig/${prec}mumps.pc <<-EOF
+			prefix=/usr
+			exec_prefix=\${prefix}
+			libdir=\${exec_prefix}/lib
+			includedir=\${prefix}/include
+
+			Name: ${prec}mumps
+			Description: The parallel ${prec}-precision MUMPS library
+			Version: $pkgver
+			Cflags: -I\${includedir}
+			Libs: -L\${libdir} -l${prec}mumps -lmumps_common -lpord
+		EOF
+	done
+}
+
+sha512sums="
+abe97bc948c1e067fc1e1b810d6625afa8145fe9a5fe25c893ca2fbf254da77dd6891ddeba9f39fd26ac51234b2f5cdf0bebf70784795d8cbcfce1d95b1bf435  MUMPS_5.7.3.tar.gz
+6b7e3e52e13250889473b80f0019572d2e1375ececdec8c8482a9a489914fc8b240f49165c216c641f1b6bb67254ce539379eeabf0e70c64f8c9369000e9139a  Makefile.inc
+"

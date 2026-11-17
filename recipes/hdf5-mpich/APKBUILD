@@ -1,0 +1,86 @@
+# Maintainer: Jean Iaquinta <jeani@uio.no>
+
+pkgname=hdf5-mpich
+pkgver=1.14.6
+pkgrel=0
+pkgdesc="HDF5 data model, library, and file format (MPICH parallel)"
+url="https://www.hdfgroup.org/solutions/hdf5/"
+arch="all"
+license="HDF5"
+replaces="hdf5"
+depends="!hdf5 !hdf5-dev !hdf5-hl !hdf5-fortran"
+depends_dev="zlib-dev"
+makedepends="cmake mpich-dev perl $depends_dev"
+checkdepends="diffutils"
+options="!check"
+subpackages="
+	$pkgname-tools
+	$pkgname-hl
+	$pkgname-doc
+	$pkgname-dev
+	"
+source="hdf5-$pkgver.tar.gz::https://github.com/HDFGroup/hdf5/releases/download/hdf5_$pkgver/hdf5-$pkgver.tar.gz
+	"
+builddir="$srcdir/hdf5-$pkgver"
+
+build() {
+
+	export CFLAGS="-DMPI_FORTRAN ${CFLAGS:-}"
+	if [ "$CBUILD" != "$CHOST" ]; then
+		crossopts="-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_HOST_SYSTEM_NAME=Linux"
+	fi
+
+	cmake -B build -G "Unix Makefiles" \
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DBUILD_SHARED_LIBS=ON \
+		-DBUILD_STATIC_LIBS=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
+		-DCMAKE_C_COMPILER=mpicc \
+		-Wno-dev \
+		-DHDF5_USE_GNU_DIRS=ON \
+		-DHDF5_ENABLE_PARALLEL=ON \
+		-DBUILD_TESTING=OFF \
+		-DHDF5_BUILD_EXAMPLES=OFF \
+		-DHDF5_BUILD_TOOLS=ON \
+		-DHDF5_BUILD_CPP_LIB=OFF \
+		-DHDF5_BUILD_HL_LIB=ON \
+		-DHDF5_BUILD_FORTRAN=OFF \
+		-DHDF5_BUILD_JAVA=OFF \
+		-DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
+		-DHDF5_ENABLE_SZIP_SUPPORT=OFF \
+		-DHDF5_INSTALL_CMAKE_DIR=lib/cmake/hdf5 \
+		$crossopts
+
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}
+
+tools() {
+	pkgdesc="Runtime tools for HDF5 library (MPICH parallel)"
+	amove usr/bin/*
+	amove usr/lib/libhdf5_tools.so.*
+}
+
+hl() {
+	pkgdesc="High Level C API runtime files for HDF5 library (MPICH parallel)"
+	amove usr/lib/libhdf5_hl.so.*
+}
+
+doc() {
+	default_doc
+}
+
+dev() {
+	default_dev
+	amove usr/lib/libhdf5.settings
+}
+
+sha512sums="
+d93194ad8f48acf110aae317f4c37104b9042f89ef72919aac887817e4c2713449c4cb2ab6a163c61ab1c12811170d7611cdf69322b0e0f96420fcc7f99fdd67  hdf5-1.14.6.tar.gz
+"

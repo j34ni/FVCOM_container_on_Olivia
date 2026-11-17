@@ -1,0 +1,55 @@
+# Maintainer: Jean Iaquinta <jeani@uio.no>
+pkgname=netcdf-mpich
+pkgver=4.9.2
+pkgrel=0
+pkgdesc="NetCDF C library, built against MPICH + parallel HDF5 + pnetcdf"
+url="https://www.unidata.ucar.edu/software/netcdf/"
+arch="all"
+license="NOAA"
+depends="mpich hdf5-mpich hdf5-mpich-hl pnetcdf-mpich zlib zstd-libs libcurl
+	!netcdf !netcdf-dev !netcdf-doc !netcdf-utils
+	!netcdf-fortran !netcdf-fortran-dev !netcdf-fortran-doc"
+depends_dev="hdf5-mpich-dev pnetcdf-mpich-dev mpich-dev zlib-dev zstd-dev curl-dev
+	libaec-dev bzip2-dev"
+makedepends="$depends_dev bash"
+options="!check"
+subpackages="$pkgname-dev $pkgname-doc"
+source="netcdf-c-$pkgver.tar.gz::https://github.com/Unidata/netcdf-c/archive/refs/tags/v$pkgver.tar.gz"
+builddir="$srcdir/netcdf-c-$pkgver"
+
+build() {
+	export CPPFLAGS="-DNDEBUG ${CPPFLAGS:-}"
+	export CONFIG_SHELL=/bin/bash
+	CC=mpicc FC=mpifort ./configure \
+		--prefix=/usr \
+		--enable-shared \
+		--disable-static \
+		--disable-dependency-tracking \
+		--enable-parallel \
+		--enable-pnetcdf \
+		--disable-dap \
+		--disable-libxml2 \
+		--disable-examples \
+		--disable-doxygen \
+		--disable-dot \
+		--disable-internal-docs
+	make
+}
+
+check() {
+	export CONFIG_SHELL=/bin/bash
+	make check
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	rm -f "$pkgdir"/usr/lib/*.la
+	if grep -q "^#define NC_HAS_HDF5      1" "$pkgdir"/usr/include/netcdf_meta.h \
+	   && ! grep -q "^#define NC_HAS_NC4" "$pkgdir"/usr/include/netcdf_meta.h; then
+		sed -i "/^#define NC_HAS_HDF5/a #define NC_HAS_NC4       1" "$pkgdir"/usr/include/netcdf_meta.h
+	fi
+}
+
+sha512sums="
+e0c299843083cde54bfaccebd4f831513c2c531f3a98e37a1bc14d12a5e63af0b994cab9292bcb17e1b162ffe26b49ed3f9c6de7f2f48cdfcfd3f3c4a377bb04  netcdf-c-4.9.2.tar.gz
+"

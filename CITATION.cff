@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "FVCOM on Olivia: containerized FVCOM 5.1 with PETSc/hypre for the Sigma2 Olivia cluster"
+version: v1.0.0
+date-released: 2026-11-17
+authors:
+  - family-names: Iaquinta
+    given-names: Jean
+    email: jeani@uio.no
+    affiliation: University of Oslo
+repository-code: "https://github.com/j34ni/FVCOM_container_on_Olivia"
+license: MIT

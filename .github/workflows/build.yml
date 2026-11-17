@@ -1,0 +1,84 @@
+name: Build FVCOM container for Olivia
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: self-hosted
+    timeout-minutes: 300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build (local)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: fvcom:test-olivia
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+      - name: Test pinned mpich version
+        run: |
+          OUTPUT=$(docker run --rm fvcom:test-olivia bash -c 'mpichversion | head -1')
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "5.1.0b1" || exit 1
+      - name: Test fvcom binary links MPICH and PETSc
+        run: |
+          docker run --rm fvcom:test-olivia bash -c 'command -v fvcom'
+          OUTPUT=$(docker run --rm fvcom:test-olivia bash -c 'ldd /opt/fvcom/fvcom | grep -iE "mpi|petsc"')
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "libmpi.so.0" || exit 1
+          echo "$OUTPUT" | grep -q "libpetsc" || exit 1
+      - name: Test netcdf parallel I/O enabled
+        run: |
+          OUTPUT=$(docker run --rm fvcom:test-olivia bash -c 'grep -E "NC_HAS_(PARALLEL4|PARALLEL|PNETCDF)" /usr/include/netcdf_meta.h')
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -Eq "NC_HAS_PARALLEL4[[:space:]]+1" || exit 1
+          echo "$OUTPUT" | grep -Eq "NC_HAS_PNETCDF[[:space:]]+1" || exit 1
+      - name: Test build flags are -O2 everywhere
+        run: |
+          OUTPUT=$(docker run --rm fvcom:test-olivia sh -c 'cat /usr/lib/libhdf5.settings /usr/lib/libnetcdf.settings /usr/lib/libpnetcdf.settings 2>/dev/null | grep -iE "CFLAGS"')
+          echo "$OUTPUT"
+          test -n "$OUTPUT" || exit 1
+          if echo "$OUTPUT" | grep -qE -- "-Os|-O3|-O0"; then echo "non -O2 flag found"; exit 1; fi
+      - name: Test single MPI provider
+        run: |
+          OUTPUT=$(docker run --rm fvcom:test-olivia bash -c 'apk info -e hdf5 netcdf netcdf-fortran 2>/dev/null; true')
+          echo "serial providers present: [$OUTPUT]"
+          test -z "$OUTPUT" || exit 1
+      - name: Login to GHCR
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push to GHCR
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/j34ni/fvcom-container-on-olivia/fvcom:mpich5.1
+          cache-from: type=gha
+          provenance: false
+          sbom: false
+      - name: Prune builder cache
+        if: always()
+        run: |
+          docker builder prune -f --keep-storage 20GB || true
+          docker image prune -f --filter until=72h || true

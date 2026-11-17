@@ -1,0 +1,44 @@
+# Maintainer: Jean Iaquinta <jeani@uio.no>
+pkgname=pnetcdf-mpich
+pkgver=1.14.1
+pkgrel=0
+pkgdesc="Parallel NetCDF I/O library (pnetcdf) for MPI"
+url="https://parallel-netcdf.github.io/"
+arch="all"
+license="BSD-3-Clause"
+depends="mpich"
+makedepends="mpich-dev m4 perl bash"
+subpackages="$pkgname-dev $pkgname-doc"
+options="!check"
+source="https://parallel-netcdf.github.io/Release/pnetcdf-$pkgver.tar.gz"
+builddir="$srcdir/pnetcdf-$pkgver"
+
+build() {
+
+	export CFLAGS="-DMPI_FORTRAN ${CFLAGS}"
+	export CPPFLAGS="-DNDEBUG ${CPPFLAGS:-}"
+	export CONFIG_SHELL=/bin/bash
+	CC=mpicc ./configure \
+		--prefix=/usr \
+		--with-mpi=/usr \
+		--enable-shared \
+		--disable-static \
+		--disable-fortran \
+		--disable-cxx \
+		--disable-dependency-tracking
+	make
+}
+
+check() {
+	export CONFIG_SHELL=/bin/bash
+	make check
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	rm -f "$pkgdir"/usr/lib/*.la
+}
+
+sha512sums="
+82d6831a42e41476d867a4cb59c03b75f88b75b0e19d33f9a1c183cc82b9d91284773f9affe5cd195e61dfaafbc73ff4d137e02e4df81a08e1ef0a15110305bb  pnetcdf-1.14.1.tar.gz
+"

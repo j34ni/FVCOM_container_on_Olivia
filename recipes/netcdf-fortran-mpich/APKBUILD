@@ -1,0 +1,41 @@
+# Maintainer: Jean Iaquinta <jeani@uio.no>
+pkgname=netcdf-fortran-mpich
+pkgver=4.6.2
+pkgrel=0
+pkgdesc="NetCDF Fortran bindings (netcdf.mod), built against the MPICH stack"
+url="https://www.unidata.ucar.edu/software/netcdf/"
+arch="all"
+license="NOAA"
+depends="mpich netcdf-mpich !netcdf !netcdf-dev !netcdf-fortran !netcdf-fortran-dev"
+depends_dev="netcdf-mpich-dev mpich-dev"
+makedepends="$depends_dev gfortran bash zstd-dev"
+options="!check"
+subpackages="$pkgname-dev $pkgname-doc"
+source="netcdf-fortran-$pkgver.tar.gz::https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v$pkgver.tar.gz"
+builddir="$srcdir/netcdf-fortran-$pkgver"
+
+build() {
+	export CPPFLAGS="-DNDEBUG ${CPPFLAGS:-}"
+	export CONFIG_SHELL=/bin/bash
+	CC=mpicc FC=mpifort ./configure \
+		--prefix=/usr \
+		--enable-shared \
+		--disable-static \
+		--disable-dependency-tracking \
+		--disable-examples
+	make
+}
+
+check() {
+	export CONFIG_SHELL=/bin/bash
+	make check
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	rm -f "$pkgdir"/usr/lib/*.la
+}
+
+sha512sums="
+cde63b4d285ef00f256a028c79b6c00a525e4cbe8dab83d3eab14a568a2d32c22dd0e81bccc5bde997860918a7ee184d15b15c847f492ce6393a425dafed3ef2  netcdf-fortran-4.6.2.tar.gz
+"

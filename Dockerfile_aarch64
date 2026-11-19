@@ -1,0 +1,86 @@
+FROM --platform=linux/arm64 alpine:edge
+
+ARG FVCOM_REPO=https://github.com/akvaplan-niva/FVCOM_dev.git
+ARG FVCOM_REF=632c1feb7f078e99fc1568aaffd77a0f3b84f19d
+
+RUN apk add --no-cache abuild sudo git cmake ninja samurai m4 perl python3 \
+        autoconf automake libtool gawk diffutils file bison flex pkgconf \
+        bzip2-dev xz-dev zlib-dev curl-dev libxml2-dev libaec-dev \
+        json-c-dev hwloc-dev rdma-core-dev \
+    && (grep -q '^abuild:' /etc/group || addgroup -S abuild) \
+    && (grep -q '^builder:' /etc/passwd || adduser -S -G abuild -s /bin/ash builder) \
+    && mkdir -p /home/builder/.abuild /opt/fvcom-repo \
+    && chown -R builder:abuild /home/builder /opt/fvcom-repo \
+    && echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder \
+    && chmod 0440 /etc/sudoers.d/builder
+
+COPY abuild.conf /home/builder/.abuild/abuild.conf
+COPY recipes /home/builder/recipes
+RUN chown -R builder:abuild /home/builder
+
+USER builder
+ENV HOME=/home/builder
+
+RUN abuild-keygen -a -n \
+    && sudo cp ~/.abuild/*.pub /etc/apk/keys/ && sudo apk fix
+
+RUN cd /home/builder/recipes/cassini-headers && abuild -r
+RUN cd /home/builder/recipes/cxi-uapi-headers && abuild -r
+RUN cd /home/builder/recipes/libcxi && abuild -r
+RUN cd /home/builder/recipes/libfabric && abuild -r
+RUN cd /home/builder/recipes/xpmem && abuild -r
+RUN cd /home/builder/recipes/mpich && abuild -r
+RUN cd /home/builder/recipes/metis && abuild -r
+RUN cd /home/builder/recipes/openblas && abuild -r
+RUN cd /home/builder/recipes/hdf5-mpich && abuild -r
+RUN cd /home/builder/recipes/scotch-mpich && abuild -r
+RUN cd /home/builder/recipes/scalapack-mpich && abuild -r
+RUN cd /home/builder/recipes/hypre-mpich && abuild -r
+RUN cd /home/builder/recipes/pnetcdf-mpich && abuild -r
+RUN cd /home/builder/recipes/netcdf-mpich && abuild -r
+RUN cd /home/builder/recipes/netcdf-fortran-mpich && abuild -r
+RUN cd /home/builder/recipes/mumps-mpich && abuild -r
+RUN cd /home/builder/recipes/petsc-mpich && abuild -r
+
+USER root
+
+RUN for d in /opt/fvcom-repo/*/; do \
+         echo "file://$d" >> /etc/apk/repositories; \
+       done \
+    && apk update \
+    && apk add --no-cache \
+        "!hdf5" "!netcdf" "!netcdf-fortran" \
+        mpich mpich-dev \
+        metis metis-dev \
+        openblas openblas-dev \
+        hdf5-mpich hdf5-mpich-dev \
+        scotch-mpich scotch-mpich-dev \
+        scalapack-mpich scalapack-mpich-dev \
+        hypre-mpich hypre-mpich-dev \
+        pnetcdf-mpich pnetcdf-mpich-dev \
+        netcdf-mpich netcdf-mpich-dev \
+        netcdf-fortran-mpich netcdf-fortran-mpich-dev \
+        mumps-mpich mumps-mpich-dev \
+        petsc-mpich petsc-mpich-dev \
+        build-base gfortran make git perl bash coreutils tzdata python3
+
+RUN git init -q /opt/fvcom-src \
+    && git -C /opt/fvcom-src fetch -q --depth 1 "${FVCOM_REPO}" "${FVCOM_REF}" \
+    && git -C /opt/fvcom-src checkout -q FETCH_HEAD \
+    && cd /opt/fvcom-src/src/libs \
+    && mkdir -p install/include install/lib install/bin \
+    && sed -i 's|^PACKAGES =.*|PACKAGES =\tjulian|' makefile \
+    && make all INSTALLDIR=/opt/fvcom-src/src/libs/install AR="ar rc" RANLIB=ranlib
+
+COPY make.inc /opt/fvcom-src/src/make.inc
+
+RUN cd /opt/fvcom-src/src \
+    && (make -i > /var/tmp/fvcom.build.log 2>&1 || true) \
+    && ! grep -qE "Error:|fatal error:|Error [0-9]+|undefined reference" /var/tmp/fvcom.build.log \
+    && test -x fvcom \
+    && mkdir -p /opt/fvcom \
+    && cp fvcom /opt/fvcom \
+    && rm -rf /opt/fvcom-src /var/tmp/fvcom.build.log /opt/fvcom-repo /var/cache/apk/*
+
+ENV PATH="/opt/fvcom:$PATH"
+CMD ["/bin/bash"]

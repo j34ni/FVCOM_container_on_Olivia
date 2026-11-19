@@ -38,9 +38,6 @@ aarch64)
 arm*)
 	_flags="$_flags DYNAMIC_ARCH=0 TARGET=ARMV7"
 	;;
-riscv64)
-	_flags="$_flags DYNAMIC_ARCH=0 TARGET=RISCV64_GENERIC"
-	;;
 *)
 	_flags="$_flags DYNAMIC_ARCH=0"
 	;;

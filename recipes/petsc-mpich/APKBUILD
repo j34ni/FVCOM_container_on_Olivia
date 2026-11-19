@@ -5,7 +5,7 @@ pkgrel=3
 pkgdesc="Portable, Extensible Toolkit for Scientific Computation (MPICH)" 
 url="https://petsc.org/"
 license="BSD-2-Clause"
-arch="x86_64 aarch64 riscv64"
+arch="x86_64 aarch64"
 makedepends="
 	openblas-dev
 	gfortran
@@ -44,7 +44,7 @@ build() {
 	export FI_PROVIDER=tcp
 
 	export -n AR FC F90 F77 CC CXX CPP RANLIB
-	export -n CFLAGS CXXFLAGS CPPFLAGS FFLAGS LDFLAGS
+	export -n CFLAGS CXXFLAGS CPPFLAGS FFLAGS FCFLAGS LDFLAGS MAKEFLAGS
 
 	python3 ./configure \
 		AR="${AR:-ar}" \

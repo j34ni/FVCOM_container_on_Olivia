@@ -21,8 +21,7 @@ build() {
 		--prefix=/usr \
 		--enable-shared \
 		--disable-static \
-		--disable-dependency-tracking \
-		--disable-examples
+		--disable-dependency-tracking
 	make
 }
 
